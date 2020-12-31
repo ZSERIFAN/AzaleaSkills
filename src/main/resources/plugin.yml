@@ -1,0 +1,10 @@
+name: AzaleaSkills
+version: 1.0-b
+description: Skills for Azalea RPG
+main: by.thm.AzaleaSkills
+author: thmihnea
+api-version: 1.13
+
+commands:
+  stats:
+    description: Allows you to see statistics of another player.
