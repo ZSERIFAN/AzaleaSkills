@@ -13,13 +13,9 @@ public class PlayerLeaveListener implements Listener {
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
         Player p = e.getPlayer();
-        try {
-            if (SkillManager.getSkilledPlayer(p) == null) return;
-            SkillManager.getSkilledPlayer(p).uploadData();
-            SkillManager.getSkilledPlayer(p).getDataSavingTask().clear();
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        if (SkillManager.getSkilledPlayer(p) == null) return;
+        SkillManager.getSkilledPlayer(p).uploadData();
+        SkillManager.getSkilledPlayer(p).getDataSavingTask().clear();
         SkillManager.removeSkilledPlayer(p);
         System.out.println("[AzaleaSkills] Removed player " + p.getName() + " from cached memory due to him leaving the server.");
     }

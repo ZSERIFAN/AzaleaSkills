@@ -10,10 +10,16 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-public class SkilledPlayer implements Skill {
+public class SkilledPlayer {
 
     private SQLMethods sql = new SQLMethods();
+    private Map<SkillType, Integer> currentXp = new HashMap<>();
+    private Map<SkillType, Integer> xpToNextLevel = new HashMap<>();
 
     private Player player;
     private long uploadTime;
@@ -38,6 +44,12 @@ public class SkilledPlayer implements Skill {
     public SkilledPlayer(Player player) {
         this.player = player;
         this.dataSavingTask = new DataSavingTask(this.player);
+        this.setup();
+        this.setupXp();
+        SkillManager.addSkilledPlayer(this.player, this);
+    }
+
+    private void setup() {
         try {
             this.miningXP = sql.getValue(TableType.DATA_MINING, "CURRENT_XP", this.player.getUniqueId().toString());
             this.miningXPToNextLevel = sql.getValue(TableType.DATA_MINING, "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString());
@@ -55,52 +67,66 @@ public class SkilledPlayer implements Skill {
             this.damageXPToNextLevel = sql.getValue(TableType.DATA_DAMAGE, "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString());
             this.manaXP = sql.getValue(TableType.DATA_MANA, "CURRENT_XP", this.player.getUniqueId().toString());
             this.manaXPToNextLevel = sql.getValue(TableType.DATA_MANA, "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString());
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
             System.out.println("[AzaleaSkills] (FATAL) Was not able to initiate SkilledPlayer object for player " + this.player.getName() + "! Report this stacktrace to thmihnea.");
         }
-        SkillManager.addSkilledPlayer(this.player, this);
     }
 
-    public void uploadData() throws SQLException {
+    private void setupXp() {
+        this.setupCurrentXp();
+        this.setupXpToNextLevel();
+    }
+
+    private void setupCurrentXp() {
+        this.currentXp.put(SkillType.MINING, this.miningXP);
+        this.currentXp.put(SkillType.COMBAT, this.combatXP);
+        this.currentXp.put(SkillType.FARMING, this.farmingXP);
+        this.currentXp.put(SkillType.FORAGING, this.foragingXP);
+        this.currentXp.put(SkillType.HEALTH, this.healthXP);
+        this.currentXp.put(SkillType.DEFENSE, this.defenseXP);
+        this.currentXp.put(SkillType.DAMAGE, this.damageXP);
+        this.currentXp.put(SkillType.MANA, this.manaXP);
+    }
+
+    private void setupXpToNextLevel() {
+        this.xpToNextLevel.put(SkillType.MINING, this.miningXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.COMBAT, this.combatXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.FARMING, this.farmingXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.FORAGING, this.foragingXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.HEALTH, this.healthXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.DEFENSE, this.defenseXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.DAMAGE, this.damageXPToNextLevel);
+        this.xpToNextLevel.put(SkillType.MANA, this.manaXPToNextLevel);
+    }
+
+    private void updateCurrentXpTable(SkillType skillType) {
+        try {
+            sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.currentXp.get(skillType));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateXpToNextLevelTable(SkillType skillType) {
+        try {
+            sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.xpToNextLevel.get(skillType));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateTable(SkillType skillType) {
+        this.updateCurrentXpTable(skillType);
+        this.updateXpToNextLevelTable(skillType);
+    }
+
+    public void uploadData() {
         this.uploadTime = System.currentTimeMillis();
         System.out.println("[AzaleaSkills] Initiating data syncing for player " + this.player.getName() + ". Attempting to upload SQL data to Database.");
-        for (SkillType skillType : SkillType.values()) {
-            switch (skillType) {
-                case MINING:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getMiningXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getMiningXPToNextLevel());
-                    break;
-                case COMBAT:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getCombatXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getCombatXPToNextLevel());
-                    break;
-                case FARMING:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getFarmingXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getFarmingXPToNextLevel());
-                    break;
-                case FORAGING:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getForagingXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getForagingXPToNextLevel());
-                    break;
-                case HEALTH:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getHealthXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getHealthXPToNextLevel());
-                    break;
-                case DEFENSE:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getDefenseXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getDefenseXPToNextLevel());
-                    break;
-                case DAMAGE:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getDamageXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getDamageXPToNextLevel());
-                    break;
-                case MANA:
-                    sql.updateTable(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString(), this.getManaXP());
-                    sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString(), this.getManaXPToNextLevel());
-                    break;
-            }
-        }
+        Arrays.stream(SkillType.values()).forEach(skillType -> {
+            CompletableFuture.runAsync(() -> this.updateTable(skillType));
+        });
         System.out.println("[AzaleaSkills] Successfully synced data for player " + this.player.getName() + "! Process took: " + (System.currentTimeMillis() - this.uploadTime) + "ms");
     }
 
@@ -114,7 +140,7 @@ public class SkilledPlayer implements Skill {
         }
     }
 
-    public Integer getCurrentXP(SkillType skillType) {
+    public Integer getCurrentXpSQL(SkillType skillType) {
         try {
             return sql.getValue(skillType.getTableType(), "CURRENT_XP", this.player.getUniqueId().toString());
         } catch (SQLException exception) {
@@ -124,7 +150,7 @@ public class SkilledPlayer implements Skill {
         }
     }
 
-    public Integer getXpToNextLevel(SkillType skillType) {
+    public Integer getXpToNextLevelSQL(SkillType skillType) {
         try {
             return sql.getValue(skillType.getTableType(), "XP_TO_NEXT_LEVEL", this.player.getUniqueId().toString());
         } catch (SQLException exception) {
@@ -134,7 +160,7 @@ public class SkilledPlayer implements Skill {
         }
     }
 
-    public void setXpToNextLevel(SkillType skillType, Integer value) {
+    public void setXpToNextLevelSQL(SkillType skillType, Integer value) {
         try {
             sql.updateTable(skillType.getTableType(), "XP_TO_NEXT_LEVEL", player.getUniqueId().toString(), value);
         } catch (SQLException exception) {
@@ -143,7 +169,7 @@ public class SkilledPlayer implements Skill {
         }
     }
 
-    public void setCurrentXP(SkillType skillType, Integer value) {
+    public void setCurrentXpSQL(SkillType skillType, Integer value) {
         try {
             sql.updateTable(skillType.getTableType(), "CURRENT_XP", player.getUniqueId().toString(), value);
         } catch (SQLException exception) {
@@ -162,8 +188,8 @@ public class SkilledPlayer implements Skill {
     }
 
     public void initLevelUp(SkillType skillType) {
-        int currentXp = this.getCurrentXP(skillType);
-        int xpToNextLevel = this.getXpToNextLevel(skillType);
+        int currentXp = this.getCurrentXpSQL(skillType);
+        int xpToNextLevel = this.getXpToNextLevelSQL(skillType);
         while (currentXp >= xpToNextLevel) {
             currentXp -= xpToNextLevel;
             boolean isIncremental = AzaleaSkills.cfg.getBoolean("leveling.milestones.increment.enabled");
@@ -171,190 +197,44 @@ public class SkilledPlayer implements Skill {
                 xpToNextLevel = AzaleaSkills.cfg.getInt("leveling.milestones.increment.increment_value") * this.getLevel(skillType);
             else if (this.getLevel(skillType) == 50) xpToNextLevel = 0;
             else xpToNextLevel = AzaleaSkills.cfg.getInt("leveling.milestones.level_" + this.getLevel(skillType));
-            this.setXpToNextLevel(skillType, xpToNextLevel);
+            this.setXpToNextLevelSQL(skillType, xpToNextLevel);
             this.setLevel(skillType, this.getLevel(skillType) + 1);
         }
-        this.setCurrentXP(skillType, currentXp);
+        int finalCurrentXp = currentXp;
+        CompletableFuture.runAsync(() -> this.setCurrentXpSQL(skillType, finalCurrentXp));
     }
 
     public void levelUp(SkillType skillType) {
-        try {
-            this.uploadData();
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        this.uploadData();
         int initialLevel = this.getLevel(skillType);
         initLevelUp(skillType);
-        int xpToNextLevel = this.getXpToNextLevel(skillType);
-        switch (skillType) {
-            case MINING:
-                this.miningXP = 0;
-                this.miningXPToNextLevel = xpToNextLevel;
-                break;
-            case COMBAT:
-                this.combatXP = 0;
-                this.combatXPToNextLevel = xpToNextLevel;
-                break;
-            case FARMING:
-                this.farmingXP = 0;
-                this.farmingXPToNextLevel = xpToNextLevel;
-                break;
-            case FORAGING:
-                this.foragingXP = 0;
-                this.foragingXPToNextLevel = xpToNextLevel;
-                break;
-            case HEALTH:
-                this.healthXP = 0;
-                this.healthXPToNextLevel = xpToNextLevel;
-                break;
-            case DEFENSE:
-                this.defenseXP = 0;
-                this.defenseXPToNextLevel = xpToNextLevel;
-                break;
-            case DAMAGE:
-                this.damageXP = 0;
-                this.damageXPToNextLevel = xpToNextLevel;
-                break;
-            case MANA:
-                this.manaXP = 0;
-                this.manaXPToNextLevel = xpToNextLevel;
-                break;
-        }
+        int xpToNextLevel = this.getXpToNextLevelSQL(skillType);
+        this.currentXp.put(skillType, 0);
+        this.xpToNextLevel.put(skillType, xpToNextLevel);
         this.player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8&m-------------------------"));
         this.player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6  Skill Level Up! &3&l" + skillType.getName() + " " + Util.IntegerToRomanNumeral(initialLevel) + " &8&l➢ &3&l" + Util.IntegerToRomanNumeral(this.getLevel(skillType))));
         this.player.sendMessage(" ");
         this.player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7&oLeveling up allows you to gain access to different areas"));
         this.player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7&oof the server, while also showing your intense work and dedication."));
         this.player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8&m-------------------------"));
+        assert XSound.ENTITY_PLAYER_LEVELUP.parseSound() != null;
         this.player.playSound(this.player.getLocation(), XSound.ENTITY_PLAYER_LEVELUP.parseSound(), 1.0f, 1.0f);
     }
 
-    public Integer getMiningXP() {
-        return this.miningXP;
+    public void setCurrentXp(SkillType skillType, Integer value) {
+        this.currentXp.put(skillType, value);
     }
 
-    public Integer getMiningXPToNextLevel() {
-        return this.miningXPToNextLevel;
+    public Integer getCurrentXp(SkillType skillType) {
+        return this.currentXp.get(skillType);
     }
 
-    public Integer getHealthXP() {
-        return this.healthXP;
+    public void setXpToNextLevel(SkillType skillType, Integer value) {
+        this.xpToNextLevel.put(skillType, value);
     }
 
-    public Integer getHealthXPToNextLevel() {
-        return this.healthXPToNextLevel;
-    }
-
-    public void setHealthXP(Integer value) {
-        this.healthXP = value;
-    }
-
-    public void setHealthXPToNextLevel(Integer value) {
-        this.healthXPToNextLevel = value;
-    }
-
-    public Integer getDefenseXP() {
-        return this.defenseXP;
-    }
-
-    public Integer getDefenseXPToNextLevel() {
-        return this.defenseXPToNextLevel;
-    }
-
-    public void setDefenseXP(Integer value) {
-        this.defenseXP = value;
-    }
-
-    public void setDefenseXPToNextLevel(Integer value) {
-        this.defenseXPToNextLevel = value;
-    }
-
-    public Integer getDamageXP() {
-        return this.damageXP;
-    }
-
-    public Integer getDamageXPToNextLevel() {
-        return this.damageXPToNextLevel;
-    }
-
-    public void setDamageXP(Integer value) {
-        this.damageXP = value;
-    }
-
-    public void setDamageXPToNextLevel(Integer value) {
-        this.damageXPToNextLevel = value;
-    }
-
-    public Integer getManaXP() {
-        return this.manaXP;
-    }
-
-    public Integer getManaXPToNextLevel() {
-        return this.manaXPToNextLevel;
-    }
-
-    public void setManaXP(Integer value) {
-        this.manaXP = value;
-    }
-
-    public void setManaXPToNextLevel(Integer value) {
-        this.manaXPToNextLevel = value;
-    }
-
-    public void setMiningXP(Integer value) {
-        this.miningXP = value;
-    }
-
-    public void setMiningXPToNextLevel(Integer value) {
-        this.miningXPToNextLevel = value;
-    }
-
-    public Integer getCombatXP() {
-        return this.combatXP;
-    }
-
-    public Integer getCombatXPToNextLevel() {
-        return this.combatXPToNextLevel;
-    }
-
-    public void setCombatXP(Integer value) {
-        this.combatXP = value;
-    }
-
-    public void setCombatXPToNextLevel(Integer value) {
-        this.combatXPToNextLevel = value;
-    }
-
-    public Integer getFarmingXP() {
-        return this.farmingXP;
-    }
-
-    public Integer getFarmingXPToNextLevel() {
-        return this.farmingXPToNextLevel;
-    }
-
-    public void setFarmingXP(Integer value) {
-        this.farmingXP = value;
-    }
-
-    public void setFarmingXPToNextLevel(Integer value) {
-        this.farmingXPToNextLevel = value;
-    }
-
-    public Integer getForagingXP() {
-        return this.foragingXP;
-    }
-
-    public Integer getForagingXPToNextLevel() {
-        return this.foragingXPToNextLevel;
-    }
-
-    public void setForagingXP(Integer value) {
-        this.foragingXP = value;
-    }
-
-    public void setForagingXPToNextLevel(Integer value) {
-        this.foragingXPToNextLevel = value;
+    public Integer getXpToNextLevel(SkillType skillType) {
+        return this.xpToNextLevel.get(skillType);
     }
 
     public DataSavingTask getDataSavingTask() {

@@ -2,12 +2,9 @@ package by.thm.tasks;
 
 import by.thm.AzaleaSkills;
 import by.thm.api.SkillManager;
-import by.thm.persistent.SQLMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.sql.SQLException;
 
 public class DataSavingTask implements Runnable {
 
@@ -21,11 +18,7 @@ public class DataSavingTask implements Runnable {
     }
 
     public void run() {
-        try {
-            SkillManager.getSkilledPlayer(this.player).uploadData();
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        SkillManager.getSkilledPlayer(this.player).uploadData();
     }
 
     public void clear() {

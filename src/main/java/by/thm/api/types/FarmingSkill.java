@@ -36,15 +36,15 @@ public class FarmingSkill implements Listener {
             if (!cropState.equals(CropState.RIPE) && !cropState.equals(CropState.TALL)) return;
             xpToAdd = skilledBlock.getXp();
         } else xpToAdd = skilledBlock.getXp();
-        if (skilledPlayer.getFarmingXP() + xpToAdd >= skilledPlayer.getFarmingXPToNextLevel()) {
+        if (skilledPlayer.getCurrentXp(SkillType.FARMING) + xpToAdd >= skilledPlayer.getXpToNextLevel(SkillType.FARMING)) {
             if (skilledPlayer.getLevel(SkillType.FARMING) >= 50)
-                skilledPlayer.setFarmingXP(skilledPlayer.getFarmingXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.FARMING, skilledPlayer.getCurrentXp(SkillType.FARMING) + xpToAdd);
             else {
-                skilledPlayer.setFarmingXP(skilledPlayer.getFarmingXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.FARMING, skilledPlayer.getCurrentXp(SkillType.FARMING) + xpToAdd);
                 skilledPlayer.levelUp(SkillType.FARMING);
             }
         }
-        else skilledPlayer.setFarmingXP(skilledPlayer.getFarmingXP() + xpToAdd);
+        else skilledPlayer.setCurrentXp(SkillType.FARMING, skilledPlayer.getCurrentXp(SkillType.FARMING) + xpToAdd);
         int level = skilledPlayer.getLevel(SkillType.FARMING);
         int chance = level * 2;
         Random random = ThreadLocalRandom.current();
@@ -56,6 +56,6 @@ public class FarmingSkill implements Listener {
             for (ItemStack is : drops)
                 player.getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
         }
-        System.out.println("FARMING XP: " + skilledPlayer.getFarmingXP() + " / XP TO NEXT LEVEL: " + skilledPlayer.getFarmingXPToNextLevel() + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
+        System.out.println("FARMING XP: " + skilledPlayer.getCurrentXp(SkillType.FARMING) + " / XP TO NEXT LEVEL: " + skilledPlayer.getXpToNextLevel(SkillType.FARMING) + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
     }
 }

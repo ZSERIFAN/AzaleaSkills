@@ -15,7 +15,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -31,15 +30,15 @@ public class MiningSkill implements Listener {
         if (skilledBlock == null) return;
         if (!skilledBlock.getSkillType().equals(SkillType.MINING)) return;
         int xpToAdd = skilledBlock.getXp();
-        if (skilledPlayer.getMiningXP() + xpToAdd >= skilledPlayer.getMiningXPToNextLevel()) {
+        if (skilledPlayer.getCurrentXp(SkillType.MINING) + xpToAdd >= skilledPlayer.getXpToNextLevel(SkillType.MINING)) {
             if (skilledPlayer.getLevel(SkillType.MINING) >= 50)
-                skilledPlayer.setMiningXP(skilledPlayer.getMiningXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.MINING, skilledPlayer.getCurrentXp(SkillType.MINING) + xpToAdd);
             else {
-                skilledPlayer.setMiningXP(skilledPlayer.getMiningXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.MINING,skilledPlayer.getCurrentXp(SkillType.MINING) + xpToAdd);
                 skilledPlayer.levelUp(SkillType.MINING);
             }
         }
-        else skilledPlayer.setMiningXP(skilledPlayer.getMiningXP() + xpToAdd);
+        else skilledPlayer.setCurrentXp(SkillType.MINING, skilledPlayer.getCurrentXp(SkillType.MINING) + xpToAdd);
         int level = skilledPlayer.getLevel(SkillType.MINING);
         int chance = level * 2;
         Random random = ThreadLocalRandom.current();
@@ -51,6 +50,6 @@ public class MiningSkill implements Listener {
             for (ItemStack is : drops)
                 player.getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
         }
-        System.out.println("MINING XP: " + skilledPlayer.getMiningXP() + " / XP TO NEXT LEVEL: " + skilledPlayer.getMiningXPToNextLevel() + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
+        System.out.println("MINING XP: " + skilledPlayer.getCurrentXp(SkillType.MINING) + " / XP TO NEXT LEVEL: " + skilledPlayer.getXpToNextLevel(SkillType.MINING) + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
     }
 }

@@ -29,15 +29,15 @@ public class ForagingSkill implements Listener {
         if (skilledBlock == null) return;
         if (!skilledBlock.getSkillType().equals(SkillType.FORAGING)) return;
         int xpToAdd = skilledBlock.getXp();
-        if (skilledPlayer.getForagingXP() + xpToAdd >= skilledPlayer.getForagingXPToNextLevel()) {
+        if (skilledPlayer.getCurrentXp(SkillType.FORAGING) + xpToAdd >= skilledPlayer.getXpToNextLevel(SkillType.FORAGING)) {
             if (skilledPlayer.getLevel(SkillType.FORAGING) >= 50)
-                skilledPlayer.setForagingXP(skilledPlayer.getForagingXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.FORAGING, skilledPlayer.getCurrentXp(SkillType.FORAGING) + xpToAdd);
             else {
-                skilledPlayer.setForagingXP(skilledPlayer.getForagingXP() + xpToAdd);
+                skilledPlayer.setCurrentXp(SkillType.FORAGING, skilledPlayer.getCurrentXp(SkillType.FORAGING) + xpToAdd);
                 skilledPlayer.levelUp(SkillType.FORAGING);
             }
         }
-        else skilledPlayer.setForagingXP(skilledPlayer.getForagingXP() + xpToAdd);
+        else skilledPlayer.setCurrentXp(SkillType.FORAGING, skilledPlayer.getCurrentXp(SkillType.FORAGING) + xpToAdd);
         int level = skilledPlayer.getLevel(SkillType.FORAGING);
         int chance = level * 2;
         Random random = ThreadLocalRandom.current();
@@ -49,6 +49,6 @@ public class ForagingSkill implements Listener {
             for (ItemStack is : drops)
                 player.getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
         }
-        System.out.println("FORAGING XP: " + skilledPlayer.getForagingXP() + " / XP TO NEXT LEVEL: " + skilledPlayer.getForagingXPToNextLevel() + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
+        System.out.println("FORAGING XP: " + skilledPlayer.getCurrentXp(SkillType.FORAGING) + " / XP TO NEXT LEVEL: " + skilledPlayer.getXpToNextLevel(SkillType.FORAGING) + " (ADDED " + xpToAdd + " FOR BREAKING " + e.getBlock().getType().toString() + ")");
     }
 }
